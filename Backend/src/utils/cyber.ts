@@ -2,19 +2,31 @@ import { UserModel } from "../models/user-model";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { appConfig } from "./app-config";
 import { Role } from "../models/enums";
+import crypto from "crypto";
 
 class Cyber {
+
+    // Hash password:
+    public hashPassword(plainText: string): string {
+        return crypto
+            .createHmac("sha512", appConfig.hmacKey)
+            .update(appConfig.hashSalt + plainText)
+            .digest("hex");
+    }
 
     // Generate new token:
     public generateToken(user: UserModel): string {
 
-        // Create payload: 
+        //remove password
+        user.password = undefined!;
+
+        // Create payload:
         const payload = { user };
 
-        // Create options: 
+        // Create options:
         const options: SignOptions = { expiresIn: "3h" };
 
-        // Generate token: 
+        // Generate token:
         const token = jwt.sign(payload, appConfig.jwtSecret!, options);
 
         // Return token:
@@ -58,11 +70,11 @@ class Cyber {
             // Extract payload:
             const payload = jwt.decode(token) as { user: UserModel };
 
-            // Extract user: 
+            // Extract user:
             const user = payload.user;
 
             // If user is not admin:
-            if(user.roleId !== Role.Admin) {
+            if (user.roleId !== Role.Admin) {
                 return false;
             }
 
@@ -73,7 +85,6 @@ class Cyber {
             return false; // Token not legal.
         }
     }
-
 }
 
 export const cyber = new Cyber();

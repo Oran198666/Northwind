@@ -8,6 +8,7 @@ import { appConfig } from "./utils/app-config";
 import expressFileUpload from "express-fileupload";
 import { saver } from "smart-saver";
 import { employeeController } from "./controllers/employee-controller";
+import { requestLogMiddleware } from "./middleware/request-log-middleware";
 import path from "path";
 import cors from "cors";
 
@@ -30,6 +31,7 @@ class App {
 
         // Register "before" middleware:
         server.use(loggerMiddleware.logToConsole);
+        server.use(requestLogMiddleware.logToDB);
         server.use(securityMiddleware.blackList);
 
         // Register controllers:

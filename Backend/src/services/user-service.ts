@@ -4,7 +4,7 @@ import { dal } from "../utils/dal";
 import { cyber } from "../utils/cyber";
 import { CredentialsModel } from "../models/credentials-model";
 import { ClientError } from "../models/client-error";
-import { StatusCode } from "../models/enums";
+import { Role, StatusCode } from "../models/enums";
 
 class UserService {
 
@@ -14,7 +14,12 @@ class UserService {
         // Validation:
         user.validate();
 
-        // If email taken: 
+        // Force role - never trust client input:
+        user.roleId = Role.User;
+
+        user.password = cyber.hashPassword(user.password);
+
+        // If email taken:
         if (await this.isEmailTaken(user.email)) {
             throw new ClientError(StatusCode.Conflict, "Email already taken.");
         }
@@ -23,7 +28,7 @@ class UserService {
         const sql = "insert into users(firstName, lastName, email, password, roleId) values(?, ?, ?, ?, ?)";
         const values = [user.firstName, user.lastName, user.email, user.password, user.roleId];
 
-        // Execute: 
+        // Execute:
         const info = await dal.execute(sql, values) as OkPacketParams;
         user.id = info.insertId!;
 
@@ -42,9 +47,8 @@ class UserService {
 
         // SQL:
         const sql = "select * from users where email = ? and password = ?";
-        const values = [credentials.email, credentials.password];
-
-        // Execute: 
+        const values = [credentials.email, cyber.hashPassword(credentials.password)];
+        // Execute:
         const users = await dal.execute(sql, values) as UserModel[];
         const user = users[0];
 
@@ -67,30 +71,13 @@ class UserService {
         const sql = "select id from users where email = ?";
         const values = [email];
 
-        // Execute: 
+        // Execute:
         const users = await dal.execute(sql, values) as UserModel[];
         const user = users[0];
 
         // Return true if we have such email, false if we don't:
-        return !!user; // null --> false, { ... } --> true
+        return !!user;
     }
-
-
-    // private async isEmailTaken(email: string): Promise<boolean> {
-    //     const sql = "select count(*) as totalUsers from users where email = ?";
-    //     const values = [email];
-    //     const results = await dal.execute(sql, values) as { totalUsers: number }[];
-    //     const totalUsers = results[0].totalUsers;
-    //     return totalUsers > 0;
-    // }
-
-    // private async isEmailTaken(email: string): Promise<boolean> {
-    //     const sql = "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?) AS emailExists";
-    //     const values = [email];
-    //     const result = await dal.execute(sql, values) as { emailExists: number }[];
-    //     return result[0].emailExists === 1;
-    // }
-
 }
 
 export const userService = new UserService();

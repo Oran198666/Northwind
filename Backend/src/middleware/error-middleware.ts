@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { StatusCode } from "../models/enums";
-import { ClientError } from "../models/client-error";
 import colors from "colors";
+import { ClientError } from "../models/client-error";
+import { StatusCode } from "../models/enums";
+import { appConfig } from "../utils/app-config";
 
 class ErrorMiddleware {
 
@@ -13,13 +14,25 @@ class ErrorMiddleware {
 
     // Catch-All Middleware:
     public catchAll(err: any, request: Request, response: Response, next: NextFunction): void {
-        console.log(err);
+
+        // Take status:
         const status = err.status || StatusCode.InternalServerError;
-        const message = err.message;
+
+        // Is server error:
+        const isServerError = status >= 500 && status <= 599;
+
+        // Take message:
+        const message = isServerError && appConfig.isProduction ? "Generic error, please try again." : err.message;
+
+        // Console message:
         console.log(colors.red(message));
+
+        // Log errors in database:
+        // ...
+
+        // Return back error:
         response.status(status).json({ message });
     }
-
 }
 
 export const errorMiddleware = new ErrorMiddleware();

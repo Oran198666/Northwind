@@ -8,8 +8,7 @@ const UserSchema = z.object({
     firstName: z.string().min(2).max(30),
     lastName: z.string().min(2).max(50),
     email: z.email().min(2).max(100),
-    password: z.string().min(2).max(100),
-    roleId: z.enum(Role)
+    password: z.string().min(8).max(100)
 });
 
 // User Interface (I = Interface):
